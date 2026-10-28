@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Audiobook Pessoal">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4c6ef5" />
+      <stop offset="1" stop-color="#7048e8" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)" />
+  <g fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M138 268v-22c0-65 53-118 118-118s118 53 118 118v22" />
+    <rect x="104" y="252" width="60" height="112" rx="30" fill="#ffffff" stroke="none" />
+    <rect x="348" y="252" width="60" height="112" rx="30" fill="#ffffff" stroke="none" />
+  </g>
+  <g fill="#ffffff">
+    <path d="M256 302c-18-15-46-24-78-24v76c32 0 60 9 78 24 18-15 46-24 78-24v-76c-32 0-60 9-78 24z" />
+  </g>
+  <path d="M256 302v76" stroke="#5f5bd7" stroke-width="9" stroke-linecap="round" />
+  <g fill="none" stroke="#dbe4ff" stroke-width="10" stroke-linecap="round">
+    <path d="M208 330h24M208 348h24M280 330h24M280 348h24" />
+  </g>
+</svg>

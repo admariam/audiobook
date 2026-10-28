@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+Thumbs.db
+coverage
+.vite
+*.log
+# Nunca versionar PDFs pessoais
+*.pdf
+!public/**/*.pdf
