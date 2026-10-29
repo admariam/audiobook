@@ -1,0 +1,14 @@
+{
+  "app": "audiobook-pessoal",
+  "version": 1,
+  "books": {
+    "livros/O Castelo Interior.pdf": {
+      "page": 1,
+      "chunkIndex": 0,
+      "progress": 0,
+      "updatedAt": 0,
+      "bookmarks": [],
+      "deletedBookmarks": []
+    }
+  }
+}
