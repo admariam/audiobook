@@ -20,6 +20,16 @@ import {
 import { clamp, formatPercent, truncate } from '../lib/format';
 import { createId } from '../lib/ids';
 import { splitIntoChunks, toSpeechText } from '../lib/text';
+import { isGithubConfigComplete, loadGithubConfig } from '../lib/github';
+import {
+  flushOutbox,
+  pullBook,
+  queueUpdate,
+  scheduleFlush,
+  toSyncedBookmark,
+  withTimeout,
+  type LocalUpdate,
+} from '../lib/sync';
 import {
   SpeechQueue,
   pickDefaultVoice,
@@ -148,6 +158,21 @@ export function Reader({
 
   const speechChunks = useMemo(() => chunks.map((chunk) => toSpeechText(chunk.text)), [chunks]);
 
+  /** Coloca a posição (e, se informado, os marcadores) na fila de envio ao GitHub. */
+  const queueCloud = useCallback(
+    (
+      position: Pick<LocalUpdate, 'page' | 'chunkIndex' | 'progress' | 'updatedAt'>,
+      extra: Pick<LocalUpdate, 'bookmarks' | 'deletedBookmarks'> = {},
+      delayMs = 120_000,
+    ) => {
+      const remotePath = bookRef.current?.remotePath;
+      if (!remotePath) return;
+      queueUpdate(remotePath, { ...position, ...extra });
+      scheduleFlush(delayMs);
+    },
+    [],
+  );
+
   const persistProgress = useCallback(
     (mode: 'debounce' | 'immediate' | 'complete' = 'debounce') => {
       const currentPages = pagesRef.current;
@@ -178,11 +203,19 @@ export function Reader({
         lastOpenedAt: Date.now(),
       };
 
+      const cloudPosition = {
+        page: savedPage,
+        chunkIndex: savedChunk,
+        progress,
+        updatedAt: payload.lastOpenedAt,
+      };
+
       if (mode === 'debounce') {
         if (persistTimerRef.current !== null) window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = window.setTimeout(() => {
           persistTimerRef.current = null;
           void updateBook(bookId, payload).catch(() => undefined);
+          queueCloud(cloudPosition);
         }, 700);
         return Promise.resolve();
       }
@@ -191,11 +224,12 @@ export function Reader({
         window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = null;
       }
+      queueCloud(cloudPosition);
       return updateBook(bookId, payload)
         .then(() => undefined)
         .catch(() => undefined);
     },
-    [bookId],
+    [bookId, queueCloud],
   );
 
   persistRef.current = persistProgress;
@@ -222,11 +256,23 @@ export function Reader({
 
     void (async () => {
       try {
-        const [loadedBook, content, blob] = await Promise.all([
+        const [storedBook, content, blob] = await Promise.all([
           getBook(bookId),
           getBookContent(bookId),
           getBookFile(bookId),
         ]);
+
+        // Traz do GitHub a página onde parou em outro aparelho, sem travar se estiver offline.
+        let loadedBook = storedBook;
+        const cloud = loadGithubConfig();
+        if (storedBook?.remotePath && isGithubConfigComplete(cloud) && !startPage) {
+          try {
+            await withTimeout(flushOutbox(cloud), 4000);
+            loadedBook = await withTimeout(pullBook(cloud, storedBook), 5000);
+          } catch {
+            loadedBook = storedBook;
+          }
+        }
 
         if (!loadedBook || !content || !blob) {
           throw new Error('Este livro não está mais disponível neste dispositivo.');
@@ -336,7 +382,9 @@ export function Reader({
 
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') void persistProgress('immediate');
+      if (document.visibilityState === 'hidden') {
+        void persistProgress('immediate').then(() => flushOutbox());
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
@@ -375,7 +423,28 @@ export function Reader({
   const handleBack = async () => {
     queue.stop();
     await persistProgress('immediate');
+    void flushOutbox();
     onBack();
+  };
+
+  /** Envia ao GitHub a lista atual de marcadores deste livro. */
+  const syncBookmarks = (list: Bookmark[], deletedId?: string) => {
+    const current = bookRef.current;
+    if (!current?.remotePath) return;
+    const total = pagesRef.current?.length ?? current.pageCount;
+    queueCloud(
+      {
+        page: pageRef.current,
+        chunkIndex: latestChunkRef.current,
+        progress: total > 0 ? clamp((pageRef.current - 1) / total, 0, 1) : 0,
+        updatedAt: Date.now(),
+      },
+      {
+        bookmarks: list.map(toSyncedBookmark),
+        deletedBookmarks: deletedId ? [deletedId] : undefined,
+      },
+      3000,
+    );
   };
 
   const togglePlayback = () => {
@@ -440,7 +509,9 @@ export function Reader({
         label,
         createdAt: Date.now(),
       });
-      setBookmarks(await listBookmarks(bookId));
+      const updated = await listBookmarks(bookId);
+      setBookmarks(updated);
+      syncBookmarks(updated);
       notify('Marcador adicionado nesta posição.', 'success');
     } catch {
       notify('Não foi possível salvar o marcador.', 'error');
@@ -450,7 +521,9 @@ export function Reader({
   const removeBookmark = async (bookmark: Bookmark) => {
     try {
       await deleteBookmark(bookmark.id);
-      setBookmarks(await listBookmarks(bookId));
+      const updated = await listBookmarks(bookId);
+      setBookmarks(updated);
+      syncBookmarks(updated, bookmark.id);
       notify('Marcador removido.', 'success');
     } catch {
       notify('Não foi possível remover o marcador.', 'error');

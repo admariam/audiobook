@@ -220,3 +220,23 @@ export const BookOpenIcon = ({ size = 20, ...rest }: IconProps) => (
     <path d="M12 6.5v15" />
   </Icon>
 );
+
+export const CloudIcon = ({ size = 20, ...rest }: IconProps) => (
+  <Icon size={size} {...rest}>
+    <path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 9.1 4.75 4.75 0 0 0 7 18.5z" />
+  </Icon>
+);
+
+export const CloudDownloadIcon = ({ size = 20, ...rest }: IconProps) => (
+  <Icon size={size} {...rest}>
+    <path d="M7.5 17.5H7a4.75 4.75 0 0 1-.4-9.4 6 6 0 0 1 11.5 1.44 4 4 0 0 1-.6 7.96h-.5" />
+    <path d="M12 11.5v8M9 16.5l3 3 3-3" />
+  </Icon>
+);
+
+export const CloudUploadIcon = ({ size = 20, ...rest }: IconProps) => (
+  <Icon size={size} {...rest}>
+    <path d="M7.5 17.5H7a4.75 4.75 0 0 1-.4-9.4 6 6 0 0 1 11.5 1.44 4 4 0 0 1-.6 7.96h-.5" />
+    <path d="M12 19.5v-8M9 14.5l3-3 3 3" />
+  </Icon>
+);

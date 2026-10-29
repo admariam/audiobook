@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BookMeta, Preferences } from './types';
 import { listBooks } from './lib/db';
 import { createId } from './lib/ids';
@@ -41,8 +41,10 @@ export default function App() {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
+  const firstLoadRef = useRef(true);
+
   const refreshBooks = useCallback(async () => {
-    setLoading(true);
+    if (firstLoadRef.current) setLoading(true);
     try {
       const loaded = await listBooks();
       setBooks(loaded);
@@ -50,6 +52,7 @@ export default function App() {
     } catch (error) {
       setLoadError(friendlyLoadError(error));
     } finally {
+      firstLoadRef.current = false;
       setLoading(false);
     }
   }, []);

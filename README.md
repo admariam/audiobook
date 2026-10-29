@@ -1,6 +1,6 @@
 # Audiobook Pessoal
 
-Aplicativo web que transforma seus PDFs em audiolivros usando a síntese de voz do próprio navegador. Tudo acontece no dispositivo: nenhum PDF, texto ou marcador é enviado para servidores.
+Aplicativo web que transforma seus PDFs em audiolivros usando a síntese de voz do próprio navegador. Por padrão tudo acontece no dispositivo; opcionalmente, os PDFs e o progresso de leitura podem ser guardados numa pasta de um repositório do GitHub para continuar a leitura em outro aparelho.
 
 **Site:** publicado automaticamente no GitHub Pages após cada envio para a branch `main`.
 
@@ -13,6 +13,7 @@ Aplicativo web que transforma seus PDFs em audiolivros usando a síntese de voz 
 - Biblioteca com busca por título/autor, ordenação e exclusão de livros.
 - Leitor com tema claro/escuro, três famílias de fonte, tamanho do texto e espaçamento ajustáveis.
 - Marcadores por página e bloco, painel de capítulos e visualização do PDF original.
+- Biblioteca no GitHub (opcional): os PDFs importados vão para a pasta `livros/` do repositório, aparecem nos outros aparelhos para baixar, e a página em que você parou e os marcadores são sincronizados em `livros/progresso.json`.
 - Backup em JSON com metadados, marcadores e preferências (os PDFs não fazem parte do backup).
 - Interface responsiva, acessível por teclado e instalável como PWA: o app shell fica disponível offline após a primeira visita, e o módulo de PDF é armazenado em cache no primeiro uso.
 
@@ -92,10 +93,26 @@ O `base` do Vite é calculado automaticamente:
 
 Os atalhos são ignorados enquanto o foco está em um campo de texto.
 
+## Biblioteca no GitHub
+
+Para ler o mesmo livro no PC e no celular:
+
+1. Crie um token em <https://github.com/settings/personal-access-tokens/new> do tipo *fine-grained*, com acesso **somente** ao repositório `audiobook` e a permissão **Contents: Read and write**.
+2. No app, toque no ícone de nuvem, confira dono, repositório, branch e pasta, cole o token e salve. Repita em cada aparelho (o token fica guardado só no navegador).
+3. Cada PDF importado é enviado à pasta `livros/`. Nos outros aparelhos ele aparece em “No GitHub, ainda não baixados neste aparelho”, com o botão **Baixar e ler**.
+4. Ao sair do leitor, ao trocar de aplicativo e a cada dois minutos de leitura, a posição e os marcadores são gravados em `livros/progresso.json`. Ao abrir o livro em outro aparelho, o app começa da posição mais recente. Sem internet, as mudanças ficam na fila e são enviadas depois.
+
+Observações:
+
+- Em repositório público, os PDFs ficam acessíveis a quem encontrar o endereço do arquivo.
+- O GitHub recusa arquivos acima de 100 MB; livros maiores ficam só no aparelho.
+- O token fica no `localStorage` do domínio `admariam.github.io`, que é compartilhado com os outros sites publicados por essa conta no GitHub Pages. Por isso o token deve dar acesso apenas a este repositório.
+- Os envios para `livros/` não disparam um novo deploy do site (`paths-ignore` no workflow).
+
 ## Privacidade e armazenamento
 
 - PDFs, texto extraído, progresso, marcadores e preferências ficam no IndexedDB e no `localStorage` do navegador.
-- Não há backend, conta ou telemetria.
+- Não há backend próprio nem telemetria. Com a biblioteca no GitHub ativada, os PDFs e o arquivo de progresso também são gravados no repositório configurado.
 - Limpar os dados do site, usar uma janela privada ou ficar sem espaço pode remover os dados.
 - O backup exportado contém apenas metadados dos livros, marcadores e preferências. Guarde os PDFs originais separadamente.
 - Ao importar um backup, os marcadores são associados a livros presentes no dispositivo pelo nome/tamanho e pelo título/quantidade de páginas. Livros ausentes não são recriados.

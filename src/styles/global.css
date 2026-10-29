@@ -961,6 +961,7 @@ kbd {
 
 .book-card__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding-top: 4px;
@@ -2246,4 +2247,201 @@ kbd {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* =========================================================
+   Biblioteca no GitHub
+   ========================================================= */
+
+.text-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.text-input:focus {
+  border-color: var(--accent);
+}
+
+.field .text-input {
+  display: block;
+}
+
+label.field {
+  display: block;
+}
+
+.cloud-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+.cloud-form__grid .field {
+  margin-bottom: 14px;
+}
+
+.cloud-form__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.cloud-form__error svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.privacy-chip--cloud {
+  cursor: pointer;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--cloud {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cloud-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 18px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.cloud-status svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.cloud-status--error,
+.cloud-status--error svg {
+  color: var(--danger);
+}
+
+.progress__fill--busy {
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    #845ef7 50%,
+    var(--accent) 100%
+  );
+  animation: cloud-busy 1.4s linear infinite;
+}
+
+@keyframes cloud-busy {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.remote-books {
+  margin-top: 32px;
+}
+
+.remote-books__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.remote-books__title svg {
+  color: var(--accent);
+}
+
+.remote-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.remote-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.remote-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.remote-item__title {
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-item__meta {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.remote-item__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 620px) {
+  .cloud-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .remote-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .remote-item__actions .button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress__fill--busy {
+    animation: none;
+  }
+}
+
+.cloud-status > span {
+  flex: 1 1 220px;
+  min-width: 0;
 }

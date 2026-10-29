@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    # Livros e progresso enviados pelo app não mudam o site: não precisa publicar de novo.
+    paths-ignore:
+      - 'livros/**'
   workflow_dispatch:
 
 permissions:

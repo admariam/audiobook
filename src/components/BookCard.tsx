@@ -1,15 +1,26 @@
 import type { BookMeta } from '../types';
 import { formatBytes, formatDate, formatPercent, pluralize, truncate } from '../lib/format';
-import { BookOpenIcon, ClockIcon, PlayIcon, TrashIcon } from './icons';
+import { BookOpenIcon, ClockIcon, CloudIcon, CloudUploadIcon, PlayIcon, TrashIcon } from './icons';
 
 interface BookCardProps {
   book: BookMeta;
   onContinue: () => void;
   onRestart: () => void;
   onDelete: () => void;
+  cloudEnabled?: boolean;
+  uploading?: boolean;
+  onUpload?: () => void;
 }
 
-export function BookCard({ book, onContinue, onRestart, onDelete }: BookCardProps) {
+export function BookCard({
+  book,
+  onContinue,
+  onRestart,
+  onDelete,
+  cloudEnabled = false,
+  uploading = false,
+  onUpload,
+}: BookCardProps) {
   const percent = Math.round(book.progress * 100);
   const primaryLabel = book.lastOpenedAt ? 'Continuar' : 'Ler';
 
@@ -34,6 +45,11 @@ export function BookCard({ book, onContinue, onRestart, onDelete }: BookCardProp
             <span className="chip">
               {book.chapters.length}{' '}
               {pluralize(book.chapters.length, 'capítulo', 'capítulos')}
+            </span>
+          ) : null}
+          {book.remotePath ? (
+            <span className="chip chip--cloud" title={`Guardado no GitHub em ${book.remotePath}`}>
+              <CloudIcon size={13} /> GitHub
             </span>
           ) : null}
           {book.needsOcr ? (
@@ -77,6 +93,17 @@ export function BookCard({ book, onContinue, onRestart, onDelete }: BookCardProp
           >
             <BookOpenIcon size={17} /> Do início
           </button>
+          {cloudEnabled && !book.remotePath && onUpload ? (
+            <button
+              type="button"
+              className="button button--ghost"
+              onClick={onUpload}
+              disabled={uploading}
+              title="Guardar uma cópia no GitHub para ler em outros aparelhos"
+            >
+              <CloudUploadIcon size={17} /> {uploading ? 'Enviando…' : 'Enviar ao GitHub'}
+            </button>
+          ) : null}
           <button
             type="button"
             className="icon-button icon-button--danger book-card__delete"

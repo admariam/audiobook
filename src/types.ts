@@ -24,6 +24,8 @@ export interface BookMeta {
   hasText: boolean;
   needsOcr: boolean;
   chapters: Chapter[];
+  /** Caminho do PDF no repositório do GitHub, quando o livro está sincronizado. */
+  remotePath?: string;
 }
 
 export interface PageText {
