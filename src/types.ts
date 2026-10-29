@@ -26,6 +26,8 @@ export interface BookMeta {
   chapters: Chapter[];
   /** Caminho do PDF no repositório do GitHub, quando o livro está sincronizado. */
   remotePath?: string;
+  /** Miniatura da primeira página (data URL JPEG); string vazia quando não foi possível gerar. */
+  cover?: string;
 }
 
 export interface PageText {

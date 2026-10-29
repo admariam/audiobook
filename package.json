@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Audiobook Pessoal — importe PDFs e ouça seus livros com privacidade, direto no navegador.",
+  "description": "Audiobook Marcio — importe PDFs e ouça seus livros direto no navegador.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

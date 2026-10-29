@@ -21,7 +21,7 @@ export function ChaptersPanel({ chapters, currentPage, onJump, onClose }: Chapte
           <ChaptersIcon size={32} />
           <p>Este PDF não possui capítulos ou marcadores identificáveis.</p>
           <p className="field__hint">
-            Use a navegação por página e os marcadores do Audiobook Pessoal para se orientar.
+            Use a navegação por página e os marcadores do Audiobook Marcio para se orientar.
           </p>
         </div>
       ) : (

@@ -26,11 +26,17 @@ export function BookCard({
 
   return (
     <article className="book-card">
-      <div className="book-card__cover" aria-hidden="true">
-        <span className="book-card__spine" />
-        <BookOpenIcon size={30} />
-        <span className="book-card__cover-title">{truncate(book.title, 48)}</span>
-      </div>
+      {book.cover ? (
+        <div className="book-card__cover book-card__cover--image" aria-hidden="true">
+          <img className="book-card__thumb" src={book.cover} alt="" loading="lazy" decoding="async" />
+        </div>
+      ) : (
+        <div className="book-card__cover" aria-hidden="true">
+          <span className="book-card__spine" />
+          <BookOpenIcon size={30} />
+          <span className="book-card__cover-title">{truncate(book.title, 48)}</span>
+        </div>
+      )}
 
       <div className="book-card__body">
         <div className="book-card__heading">

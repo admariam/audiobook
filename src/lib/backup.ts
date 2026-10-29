@@ -58,7 +58,7 @@ export function parseBackupFile(raw: string): BackupFile {
   const record = data as Record<string, unknown>;
   if (record.app !== 'audiobook-pessoal' || record.version !== 1) {
     throw new BackupError(
-      'Este arquivo não é um backup do Audiobook Pessoal ou usa uma versão incompatível.',
+      'Este arquivo não é um backup do Audiobook Marcio ou usa uma versão incompatível.',
     );
   }
 

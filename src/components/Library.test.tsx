@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BookMeta, Preferences } from '../types';
 import { defaultPreferences } from '../lib/preferences';
-import { createBook, deleteBook } from '../lib/db';
-import { parsePdf } from '../lib/pdf';
+import { createBook, deleteBook, getBookFile, updateBook } from '../lib/db';
+import { generateCover, parsePdf } from '../lib/pdf';
 import { Library } from './Library';
 
 vi.mock('../lib/db', () => ({
@@ -12,9 +12,12 @@ vi.mock('../lib/db', () => ({
   deleteBook: vi.fn().mockResolvedValue(undefined),
   listBookmarks: vi.fn().mockResolvedValue([]),
   clearAllData: vi.fn().mockResolvedValue(undefined),
+  getBookFile: vi.fn().mockResolvedValue(new Blob(['%PDF'])),
+  updateBook: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../lib/pdf', () => ({
+  generateCover: vi.fn().mockResolvedValue('data:image/jpeg;base64,AAAA'),
   parsePdf: vi.fn(),
   describePdfError: vi.fn(() => 'Falha ao processar PDF.'),
 }));
@@ -189,6 +192,24 @@ describe('Library', () => {
         expect.stringContaining('OCR'),
         'info',
       ),
+    );
+  });
+
+  it('gera a miniatura da primeira página para livros antigos', async () => {
+    vi.mocked(getBookFile).mockResolvedValue(new Blob(['%PDF']));
+    vi.mocked(generateCover).mockResolvedValue('data:image/jpeg;base64,AAAA');
+    const { props } = renderLibrary([makeBook()]);
+    await waitFor(() =>
+      expect(updateBook).toHaveBeenCalledWith('book-1', { cover: 'data:image/jpeg;base64,AAAA' }),
+    );
+    expect(props.onBooksChanged).toHaveBeenCalled();
+  });
+
+  it('mostra a miniatura no lugar da capa padrão', () => {
+    const { container } = renderLibrary([makeBook({ cover: 'data:image/jpeg;base64,AAAA' })]);
+    expect(container.querySelector('img.book-card__thumb')).toHaveAttribute(
+      'src',
+      'data:image/jpeg;base64,AAAA',
     );
   });
 });

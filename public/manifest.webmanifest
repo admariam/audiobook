@@ -1,7 +1,7 @@
 {
-  "name": "Audiobook Pessoal",
+  "name": "Audiobook Marcio",
   "short_name": "Audiobook",
-  "description": "Importe PDFs e ouça seus livros em voz alta. Tudo fica no seu dispositivo.",
+  "description": "Importe PDFs e ouça seus livros em voz alta, no PC ou no celular.",
   "lang": "pt-BR",
   "dir": "ltr",
   "start_url": ".",

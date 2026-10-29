@@ -1,4 +1,4 @@
-/* Service worker do Audiobook Pessoal.
+/* Service worker do Audiobook Marcio.
  * Estratégia: navegação network-first com fallback para o app shell;
  * assets do mesmo origin cache-first com atualização em segundo plano.
  * PDFs são armazenados no IndexedDB e não passam por este cache.

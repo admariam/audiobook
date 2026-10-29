@@ -360,7 +360,7 @@ export function Reader({
   useEffect(() => {
     if (!book) return;
     const previousTitle = document.title;
-    document.title = `${book.title} — Audiobook Pessoal`;
+    document.title = `${book.title} — Audiobook Marcio`;
     return () => {
       document.title = previousTitle;
     };

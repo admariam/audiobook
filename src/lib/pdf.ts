@@ -25,6 +25,51 @@ export interface ParsedPdf {
   pages: PageText[];
   chapters: Chapter[];
   needsOcr: boolean;
+  cover?: string;
+}
+
+const COVER_HEIGHT = 360;
+const COVER_MAX_WIDTH = 480;
+
+/** Desenha a primeira página num canvas pequeno e devolve um JPEG em data URL. */
+async function renderCover(doc: PDFDocumentProxy): Promise<string | undefined> {
+  if (typeof document === 'undefined') return undefined;
+  try {
+    const page = await doc.getPage(1);
+    try {
+      const base = page.getViewport({ scale: 1 });
+      if (!base.width || !base.height) return undefined;
+      const scale = Math.min(COVER_HEIGHT / base.height, COVER_MAX_WIDTH / base.width);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.ceil(viewport.width));
+      canvas.height = Math.max(1, Math.ceil(viewport.height));
+      const context = canvas.getContext('2d');
+      if (!context) return undefined;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: context, viewport }).promise;
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } finally {
+      page.cleanup();
+    }
+  } catch {
+    return undefined;
+  }
+}
+
+/** Gera a miniatura de um PDF já guardado (livros importados antes desta função existir). */
+export async function generateCover(file: Blob): Promise<string | undefined> {
+  let doc: PDFDocumentProxy | null = null;
+  try {
+    const data = new Uint8Array(await file.arrayBuffer());
+    doc = await getDocument({ data, useSystemFonts: true }).promise;
+    return await renderCover(doc);
+  } catch {
+    return undefined;
+  } finally {
+    await doc?.destroy().catch(() => undefined);
+  }
 }
 
 interface TextItemLike {
@@ -119,12 +164,19 @@ async function extractChapters(doc: PDFDocumentProxy, pageCount: number): Promis
   return chapters;
 }
 
+const PLACEHOLDER_METADATA = /^(untitled|sem t[ií]tulo|anonymous|unknown|desconhecido|user|usu[aá]rio|admin|owner|title|t[ií]tulo|document\d*|documento\d*)$/i;
+
 function readMetadata(
   info: Record<string, unknown> | undefined,
   fileName: string,
 ): { title: string; author?: string } {
-  const rawTitle = typeof info?.Title === 'string' ? info.Title.trim() : '';
-  const rawAuthor = typeof info?.Author === 'string' ? info.Author.trim() : '';
+  const clean = (value: unknown) => {
+    const text = typeof value === 'string' ? value.trim() : '';
+    // Metadados genéricos gravados por editores e geradores de PDF não servem de título.
+    return PLACEHOLDER_METADATA.test(text) ? '' : text.replace(/^Microsoft Word\s*-\s*/i, '');
+  };
+  const rawTitle = clean(info?.Title).replace(/\.(docx?|odt|pdf)$/i, '').trim();
+  const rawAuthor = clean(info?.Author);
   const fallback = fileName
     .replace(/\.pdf$/i, '')
     .replace(/[_-]+/g, ' ')
@@ -197,6 +249,7 @@ export async function parsePdf(file: File, options: ParsePdfOptions = {}): Promi
 
     const chapters = await extractChapters(doc, pageCount);
     const needsOcr = readableCharacters < 20;
+    const cover = await renderCover(doc);
 
     return {
       title,
@@ -205,6 +258,7 @@ export async function parsePdf(file: File, options: ParsePdfOptions = {}): Promi
       pages,
       chapters,
       needsOcr,
+      cover,
     };
   } finally {
     await doc.destroy().catch(() => undefined);

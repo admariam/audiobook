@@ -1,5 +1,5 @@
 /* =========================================================
-   Audiobook Pessoal — estilos globais
+   Audiobook Marcio — estilos globais
    ========================================================= */
 
 :root {
@@ -2444,4 +2444,29 @@ label.field {
 .cloud-status > span {
   flex: 1 1 220px;
   min-width: 0;
+}
+
+/* Miniatura da primeira página na biblioteca */
+.book-card__cover--image,
+.book-card:nth-child(3n + 2) .book-card__cover--image,
+.book-card:nth-child(3n + 3) .book-card__cover--image {
+  align-items: center;
+  justify-content: center;
+  height: 210px;
+  padding: 16px;
+  background:
+    radial-gradient(260px 140px at 50% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+    var(--surface-3);
+}
+
+.book-card__thumb {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(20, 27, 45, 0.12),
+    0 10px 24px -10px rgba(20, 27, 45, 0.45);
+  object-fit: contain;
 }

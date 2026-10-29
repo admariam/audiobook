@@ -38,7 +38,6 @@ import {
   LogoIcon,
   MoonIcon,
   SearchIcon,
-  ShieldIcon,
   SunIcon,
   TrashIcon,
   UploadIcon,
@@ -140,6 +139,34 @@ export function Library({
     });
     return filtered;
   }, [books, query, sort]);
+
+  /** Gera a miniatura da primeira página dos livros importados antes das capas existirem. */
+  const coverAttemptsRef = useRef(new Set<string>());
+  useEffect(() => {
+    const missing = books.filter(
+      (book) => book.cover === undefined && !coverAttemptsRef.current.has(book.id),
+    );
+    if (missing.length === 0) return;
+    missing.forEach((book) => coverAttemptsRef.current.add(book.id));
+    void (async () => {
+      let pdfModule: typeof import('../lib/pdf');
+      try {
+        pdfModule = await import('../lib/pdf');
+      } catch {
+        return;
+      }
+      try {
+        for (const book of missing) {
+          const blob = await getBookFile(book.id).catch(() => undefined);
+          const cover = blob ? await pdfModule.generateCover(blob) : undefined;
+          await updateBook(book.id, { cover: cover ?? '' });
+        }
+        await onBooksChanged();
+      } catch {
+        // sem miniatura: o cartão continua com a capa padrão
+      }
+    })();
+  }, [books, onBooksChanged]);
 
   const cloudErrorMessage = (error: unknown) =>
     error instanceof Error && error.message ? error.message : 'Falha ao falar com o GitHub.';
@@ -321,6 +348,7 @@ export function Library({
             needsOcr: parsed.needsOcr,
             chapters: parsed.chapters,
             remotePath: remote?.path,
+            cover: parsed.cover ?? '',
           };
 
           await createBook(meta, file, {
@@ -463,7 +491,7 @@ export function Library({
             <LogoIcon size={30} />
           </span>
           <div>
-            <h1 className="brand__title">Audiobook Pessoal</h1>
+            <h1 className="brand__title">Audiobook Marcio</h1>
             <p className="brand__tagline">Seus PDFs, sua voz, seu ritmo.</p>
           </div>
         </div>
@@ -477,11 +505,7 @@ export function Library({
             >
               <CloudIcon size={16} /> GitHub
             </button>
-          ) : (
-            <span className="privacy-chip" title="Nenhum dado sai do seu dispositivo">
-              <ShieldIcon size={16} /> 100% local
-            </span>
-          )}
+          ) : null}
           <button
             type="button"
             className="icon-button"
@@ -553,10 +577,10 @@ export function Library({
           <div className="dropzone__text">
             <h2>Adicione um PDF à sua biblioteca</h2>
             <p>
-              Arraste o arquivo aqui ou escolha no dispositivo.{' '}
+              Arraste o arquivo aqui ou escolha no dispositivo.
               {cloudConfig
-                ? `O PDF fica neste navegador e também é enviado à pasta “${cloudConfig.folder}” do GitHub.`
-                : 'O PDF fica salvo apenas neste navegador.'}
+                ? ` Ele também é enviado à pasta “${cloudConfig.folder}” do GitHub para você ler em outros aparelhos.`
+                : ''}
             </p>
           </div>
           <div className="dropzone__actions">
@@ -805,36 +829,6 @@ export function Library({
         </section>
       </main>
 
-      <footer className="library__footer">
-        <div className="privacy-note">
-          <ShieldIcon size={18} />
-          <p>
-            {cloudConfig ? (
-              <>
-                <strong>Cópia no GitHub.</strong> Os PDFs importados vão para a pasta “
-                {cloudConfig.folder}” de {cloudConfig.owner}/{cloudConfig.repo}, e a página em que
-                você parou e os marcadores ficam em <code>progresso.json</code>. Se o navegador
-                apagar os dados deste aparelho, basta baixar os livros de novo.
-              </>
-            ) : (
-              <>
-                <strong>Privacidade por padrão.</strong> PDFs, textos e marcadores ficam no
-                IndexedDB do seu navegador, sem envio a servidores. O navegador pode apagar esses
-                dados ao limpar o site ou sob falta de espaço; exporte um backup regularmente ou
-                guarde os livros no GitHub.
-              </>
-            )}
-          </p>
-        </div>
-        <div className="library__footer-actions">
-          <button type="button" className="link-button" onClick={() => setShowData(true)}>
-            <TrashIcon size={15} /> Dados e backup
-          </button>
-          <button type="button" className="link-button" onClick={() => setShowHelp(true)}>
-            Atalhos de teclado
-          </button>
-        </div>
-      </footer>
 
       {showData ? (
         <DataDialog
