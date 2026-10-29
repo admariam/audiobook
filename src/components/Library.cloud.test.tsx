@@ -93,7 +93,7 @@ describe('Library com GitHub', () => {
 
   it('envia ao GitHub o PDF importado neste aparelho', async () => {
     renderLibrary();
-    await screen.findByText(/Sincronizado com admariam\/audiobook/);
+    await screen.findByText('Sincronizado');
 
     const input = screen.getByLabelText('Selecionar arquivos PDF');
     await userEvent.upload(input, new File(['%PDF'], 'Novo livro.pdf', { type: 'application/pdf' }));

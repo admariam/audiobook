@@ -2470,3 +2470,16 @@ label.field {
     0 10px 24px -10px rgba(20, 27, 45, 0.45);
   object-fit: contain;
 }
+
+/* Nuvem do cabeçalho: verde quando sincroniza, cinza quando desconectada */
+.cloud-toggle {
+  color: var(--text-soft);
+}
+
+.cloud-toggle.is-connected {
+  color: var(--success);
+}
+
+.cloud-toggle.is-connected svg {
+  fill: color-mix(in srgb, var(--success) 18%, transparent);
+}

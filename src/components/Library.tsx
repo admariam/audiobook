@@ -511,26 +511,15 @@ export function Library({
           </span>
           <div>
             <h1 className="brand__title">Audiobook Marcio</h1>
-            <p className="brand__tagline">Seus PDFs, sua voz, seu ritmo.</p>
           </div>
         </div>
         <div className="library__header-actions">
-          {cloudConfig ? (
-            <button
-              type="button"
-              className="privacy-chip privacy-chip--cloud"
-              onClick={() => setShowCloud(true)}
-              title={`Livros sincronizados com ${cloudConfig.owner}/${cloudConfig.repo}`}
-            >
-              <CloudIcon size={16} /> GitHub
-            </button>
-          ) : null}
           <button
             type="button"
-            className="icon-button"
+            className={`icon-button cloud-toggle ${cloudConfig ? 'is-connected' : ''}`}
             onClick={() => setShowCloud(true)}
-            aria-label="Biblioteca no GitHub"
-            title="Biblioteca no GitHub"
+            aria-label={cloudConfig ? 'Sincronização conectada' : 'Sincronização desconectada'}
+            title={cloudConfig ? 'Sincronizado' : 'Desconectado'}
           >
             <CloudIcon />
           </button>
@@ -594,12 +583,9 @@ export function Library({
             <UploadIcon size={28} />
           </div>
           <div className="dropzone__text">
-            <h2>Adicione um PDF à sua biblioteca</h2>
+            <h2>Adicione um Livro à sua biblioteca</h2>
             <p>
               Arraste o arquivo aqui ou escolha no dispositivo.
-              {cloudConfig
-                ? ` Ele também é enviado à pasta “${cloudConfig.folder}” do GitHub para você ler em outros aparelhos.`
-                : ''}
             </p>
           </div>
           <div className="dropzone__actions">
@@ -620,9 +606,6 @@ export function Library({
               onChange={(event) => void handleFiles(event.target.files)}
               aria-label="Selecionar arquivos PDF"
             />
-            <span className="dropzone__hint">
-              PDFs com texto selecionável · até {formatBytes(MAX_FILE_SIZE)}
-            </span>
           </div>
 
           {importing ? (
@@ -717,10 +700,10 @@ export function Library({
               <CloudIcon size={16} />
               <span>
                 {cloudState === 'loading'
-                  ? 'Conferindo os livros e o progresso no GitHub…'
+                  ? 'Sincronizando…'
                   : cloudState === 'error'
                     ? cloudError
-                    : `Sincronizado com ${cloudConfig.owner}/${cloudConfig.repo}, pasta “${cloudConfig.folder}”.`}
+                    : 'Sincronizado'}
               </span>
               {cloudState !== 'loading' ? (
                 <button type="button" className="link-button" onClick={requestCloudRefresh}>
