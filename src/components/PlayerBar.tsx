@@ -94,7 +94,7 @@ export function PlayerBar({
             </span>
           </div>
           <p className="player__text" aria-live="off">
-            {passage ? renderPassage(passage, boundary) : 'Esta página não possui texto para ler.'}
+            {passage ? renderPassage(passage, boundary) : 'Página sem texto. Toque em reproduzir para seguir até o texto.'}
           </p>
         </div>
 

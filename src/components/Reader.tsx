@@ -92,6 +92,7 @@ export function Reader({
   const [book, setBook] = useState<BookMeta | null>(null);
   const [pages, setPages] = useState<PageText[] | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileBlob, setFileBlob] = useState<Blob | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadError, setLoadError] = useState('');
   const [page, setPage] = useState(1);
@@ -290,11 +291,17 @@ export function Reader({
         }
         if (!active) return;
 
-        const targetPage = clamp(
+        let targetPage = clamp(
           startPage ?? loadedBook.currentPage ?? 1,
           1,
           content.pages.length,
         );
+        // Livro ainda não lido: em vez de parar na capa (sem texto), abre na primeira página com texto.
+        const neverRead = !loadedBook.positionUpdatedAt && (loadedBook.currentPage ?? 1) <= 1;
+        if (!startPage && neverRead && !toSpeechText(content.pages[targetPage - 1]?.text ?? '')) {
+          const firstText = content.pages.findIndex((item) => toSpeechText(item.text));
+          if (firstText >= 0) targetPage = firstText + 1;
+        }
         initialPageRef.current = targetPage;
         initialChunkRef.current = startPage
           ? 0
@@ -312,6 +319,7 @@ export function Reader({
         setBookmarks(await listBookmarks(bookId));
         setPages(content.pages);
         setFileUrl(objectUrl);
+        setFileBlob(blob);
         setPage(targetPage);
         setLoadState('ready');
         void updateBook(bookId, { lastOpenedAt: openedBook.lastOpenedAt }).catch(() => undefined);
@@ -351,6 +359,25 @@ export function Reader({
     setBoundary(null);
     void persistProgress('immediate');
     if (autoPlayRef.current) {
+      if (speechChunks.length === 0) {
+        // Página sem texto (capa, ilustração, página em branco): segue para a próxima com texto.
+        const all = pages;
+        let target: number | null = null;
+        for (let index = page + 1; index <= all.length; index += 1) {
+          if (toSpeechText(all[index - 1]?.text ?? '')) {
+            target = index;
+            break;
+          }
+        }
+        if (target) {
+          pendingSeekRef.current = { page: target, chunkIndex: 0 };
+          setPage(target);
+          return;
+        }
+        autoPlayRef.current = false;
+        notifyRef.current('Você chegou ao fim do texto do livro.', 'success');
+        return;
+      }
       autoPlayRef.current = false;
       queue.play();
     }
@@ -520,12 +547,30 @@ export function Reader({
     );
   };
 
+  /** Próxima página (a partir de `from`) que tem texto para ler; capas e páginas em branco são puladas. */
+  const findReadablePage = (from: number): number | null => {
+    const all = pagesRef.current ?? [];
+    for (let index = Math.max(1, from); index <= all.length; index += 1) {
+      if (toSpeechText(all[index - 1]?.text ?? '')) return index;
+    }
+    return null;
+  };
+
   const togglePlayback = () => {
     if (!queue.isSupported()) {
       notify(
         'A síntese de voz não está disponível neste navegador. Você ainda pode ler o texto na tela.',
         'error',
       );
+      return;
+    }
+    if (speechChunks.length === 0 && status !== 'playing') {
+      const target = findReadablePage(page + 1);
+      if (target) {
+        changePage(target, { autoplay: true, seekChunk: 0 });
+      } else {
+        notify('Não há mais texto para ler a partir desta página.', 'info');
+      }
       return;
     }
     if (queue.getIndex() >= speechChunks.length && speechChunks.length > 0) {
@@ -896,7 +941,7 @@ export function Reader({
 
       <main className="reader__body">
         {preferences.viewMode === 'pdf' && fileUrl ? (
-          <PdfFrame objectUrl={fileUrl} page={page} title={book.title} />
+          <PdfFrame objectUrl={fileUrl} file={fileBlob} page={page} title={book.title} />
         ) : (
           <article className="page-reader" aria-label={`Página ${page} de ${totalPages}`}>
             <div className="page-reader__meta">

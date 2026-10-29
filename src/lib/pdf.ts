@@ -272,3 +272,44 @@ export function describePdfError(error: unknown): string {
   }
   return 'Não foi possível processar o PDF selecionado.';
 }
+
+export type { PDFDocumentProxy };
+
+/** Abre um PDF guardado para desenhar as páginas no próprio app (sem depender do leitor do navegador). */
+export async function openPdfDocument(file: Blob): Promise<PDFDocumentProxy> {
+  const data = new Uint8Array(await file.arrayBuffer());
+  return getDocument({ data, useSystemFonts: true }).promise;
+}
+
+export interface RenderedPage {
+  cancel: () => void;
+  promise: Promise<void>;
+}
+
+/** Desenha uma página no canvas na largura informada, com nitidez de tela de alta densidade. */
+export async function renderPageToCanvas(
+  doc: PDFDocumentProxy,
+  pageNumber: number,
+  canvas: HTMLCanvasElement,
+  cssWidth: number,
+): Promise<RenderedPage> {
+  const page = await doc.getPage(pageNumber);
+  const base = page.getViewport({ scale: 1 });
+  const ratio = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 3);
+  const scale = (cssWidth / base.width) * ratio;
+  const viewport = page.getViewport({ scale });
+  canvas.width = Math.max(1, Math.floor(viewport.width));
+  canvas.height = Math.max(1, Math.floor(viewport.height));
+  canvas.style.width = `${cssWidth}px`;
+  canvas.style.height = `${Math.floor(viewport.height / ratio)}px`;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas indisponível.');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const task = page.render({ canvas, canvasContext: context, viewport });
+  return {
+    cancel: () => task.cancel(),
+    promise: task.promise.finally(() => page.cleanup()),
+  };
+}
+
