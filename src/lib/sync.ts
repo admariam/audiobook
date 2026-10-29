@@ -51,7 +51,8 @@ export interface LocalUpdate {
   deletedBookmarks?: string[];
 }
 
-const OUTBOX_KEY = 'audiobook-pessoal:sync-outbox:v1';
+// v2: a v1 podia guardar a página 1 só por o livro ter sido aberto; descartada para não sobrescrever o outro aparelho.
+const OUTBOX_KEY = 'audiobook-pessoal:sync-outbox:v2';
 const MAX_TOMBSTONES = 500;
 
 /* ---------------------------------------------------------- estado puro */
@@ -222,13 +223,13 @@ export function hasPendingUpdates(): boolean {
 
 /** Posição atual de um livro como atualização local. */
 export function updateFromBook(
-  book: Pick<BookMeta, 'currentPage' | 'lastChunkIndex' | 'progress' | 'lastOpenedAt'>,
+  book: Pick<BookMeta, 'currentPage' | 'lastChunkIndex' | 'progress' | 'lastOpenedAt' | 'positionUpdatedAt'>,
 ): LocalUpdate {
   return {
     page: book.currentPage,
     chunkIndex: book.lastChunkIndex,
     progress: book.progress,
-    updatedAt: book.lastOpenedAt ?? 0,
+    updatedAt: book.positionUpdatedAt ?? book.lastOpenedAt ?? 0,
   };
 }
 
@@ -316,13 +317,15 @@ export async function applyRemoteState(book: BookMeta, remote: RemoteBookState |
   let result = book;
 
   const pending = book.remotePath ? readOutbox()[book.remotePath] : undefined;
-  const localUpdatedAt = Math.max(book.lastOpenedAt ?? 0, pending?.updatedAt ?? 0);
+  // Só a última mudança de posição conta; abrir o livro sem avançar não vence o outro aparelho.
+  const localUpdatedAt = Math.max(book.positionUpdatedAt ?? 0, pending?.updatedAt ?? 0);
   if (remote.updatedAt > localUpdatedAt) {
     const updated = await updateBook(book.id, {
       currentPage: Math.min(Math.max(1, remote.page), Math.max(1, book.pageCount)),
       lastChunkIndex: remote.chunkIndex,
       progress: remote.progress,
-      lastOpenedAt: remote.updatedAt,
+      positionUpdatedAt: remote.updatedAt,
+      lastOpenedAt: Math.max(book.lastOpenedAt ?? 0, remote.updatedAt),
     });
     if (updated) result = updated;
   }

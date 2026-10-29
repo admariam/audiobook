@@ -240,6 +240,25 @@ export function Library({
     setCloudTick((tick) => tick + 1);
   };
 
+  // Ao voltar para o app, traz o que foi lido em outro aparelho nesse meio-tempo.
+  const lastVisibleRefreshRef = useRef(Date.now());
+  useEffect(() => {
+    if (!cloudConfig) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastVisibleRefreshRef.current < 15_000) return;
+      lastVisibleRefreshRef.current = Date.now();
+      cloudPendingRef.current = true;
+      setCloudTick((tick) => tick + 1);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [cloudConfig]);
+
   const uploadBook = useCallback(
     async (book: BookMeta, file: Blob, takenNames: string[]): Promise<RemoteBook | null> => {
       if (!cloudConfig) return null;

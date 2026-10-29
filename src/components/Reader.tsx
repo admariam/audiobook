@@ -111,6 +111,9 @@ export function Reader({
   const queueRef = useRef<SpeechQueue | null>(null);
   const persistTimerRef = useRef<number | null>(null);
   const latestChunkRef = useRef(0);
+  /** Última posição gravada e quando ela mudou, para só sincronizar mudanças reais. */
+  const retryPullRef = useRef(false);
+  const savedPositionRef = useRef<{ page: number; chunk: number; at: number } | null>(null);
   const initialPageRef = useRef(1);
   const initialChunkRef = useRef(0);
   const pendingSeekRef = useRef<PendingSeek | null>(null);
@@ -196,26 +199,30 @@ export function Reader({
         progress = clamp((currentPage - 1 + within) / total, 0, 1);
       }
 
-      const payload = {
-        currentPage: savedPage,
-        lastChunkIndex: savedChunk,
-        progress,
-        lastOpenedAt: Date.now(),
-      };
+      const now = Date.now();
+      const saved = savedPositionRef.current;
+      const moved = !saved || saved.page !== savedPage || saved.chunk !== savedChunk;
 
-      const cloudPosition = {
-        page: savedPage,
-        chunkIndex: savedChunk,
-        progress,
-        updatedAt: payload.lastOpenedAt,
+      const save = () => {
+        const payload: Partial<BookMeta> = {
+          currentPage: savedPage,
+          lastChunkIndex: savedChunk,
+          progress,
+          lastOpenedAt: now,
+        };
+        if (moved) {
+          savedPositionRef.current = { page: savedPage, chunk: savedChunk, at: now };
+          payload.positionUpdatedAt = now;
+          queueCloud({ page: savedPage, chunkIndex: savedChunk, progress, updatedAt: now });
+        }
+        return updateBook(bookId, payload);
       };
 
       if (mode === 'debounce') {
         if (persistTimerRef.current !== null) window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = window.setTimeout(() => {
           persistTimerRef.current = null;
-          void updateBook(bookId, payload).catch(() => undefined);
-          queueCloud(cloudPosition);
+          void save().catch(() => undefined);
         }, 700);
         return Promise.resolve();
       }
@@ -224,8 +231,7 @@ export function Reader({
         window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = null;
       }
-      queueCloud(cloudPosition);
-      return updateBook(bookId, payload)
+      return save()
         .then(() => undefined)
         .catch(() => undefined);
     },
@@ -270,7 +276,9 @@ export function Reader({
             await withTimeout(flushOutbox(cloud), 4000);
             loadedBook = await withTimeout(pullBook(cloud, storedBook), 5000);
           } catch {
-            loadedBook = storedBook;
+            // Rede lenta: abre com a posição local e confere de novo em segundo plano.
+            loadedBook = (await getBook(bookId)) ?? storedBook;
+            retryPullRef.current = true;
           }
         }
 
@@ -291,6 +299,12 @@ export function Reader({
         initialChunkRef.current = startPage
           ? 0
           : Math.max(0, loadedBook.lastChunkIndex ?? 0);
+
+        savedPositionRef.current = {
+          page: clamp(loadedBook.currentPage ?? 1, 1, content.pages.length),
+          chunk: Math.max(0, loadedBook.lastChunkIndex ?? 0),
+          at: loadedBook.positionUpdatedAt ?? 0,
+        };
 
         objectUrl = URL.createObjectURL(blob);
         const openedBook: BookMeta = { ...loadedBook, lastOpenedAt: Date.now() };
@@ -420,6 +434,64 @@ export function Reader({
     [],
   );
 
+  /**
+   * Ao voltar para o app (celular desbloqueado, aba reaberta), confere no GitHub
+   * se o livro avançou em outro aparelho e pula para lá, desde que não esteja tocando.
+   */
+  const lastRemoteCheckRef = useRef(0);
+  const catchUpRef = useRef<() => Promise<void>>(async () => undefined);
+  useEffect(() => {
+    const catchUp = async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (queueRef.current?.getStatus() === 'playing') return;
+      const current = bookRef.current;
+      const cloud = loadGithubConfig();
+      if (!current?.remotePath || !isGithubConfigComplete(cloud)) return;
+      if (Date.now() - lastRemoteCheckRef.current < 10_000) return;
+      lastRemoteCheckRef.current = Date.now();
+
+      try {
+        await withTimeout(flushOutbox(cloud), 4000);
+        const fresh = await getBook(current.id);
+        if (!fresh) return;
+        const before = savedPositionRef.current?.at ?? 0;
+        const updated = await withTimeout(
+          pullBook(cloud, { ...fresh, positionUpdatedAt: Math.max(before, fresh.positionUpdatedAt ?? 0) }),
+          5000,
+        );
+        setBookmarks(await listBookmarks(current.id));
+        const at = updated.positionUpdatedAt ?? 0;
+        if (at <= before || queueRef.current?.getStatus() === 'playing') return;
+        savedPositionRef.current = { page: updated.currentPage, chunk: updated.lastChunkIndex, at };
+        setBook((previous) => (previous ? { ...previous, ...updated } : previous));
+        if (updated.currentPage !== pageRef.current || updated.lastChunkIndex !== latestChunkRef.current) {
+          changePage(updated.currentPage, { seekChunk: updated.lastChunkIndex, autoplay: false });
+          notifyRef.current(
+            `Continuando da página ${updated.currentPage}, onde você parou em outro aparelho.`,
+            'info',
+          );
+        }
+      } catch {
+        // sem internet: segue na posição deste aparelho
+      }
+    };
+    catchUpRef.current = catchUp;
+    const onVisible = () => void catchUp();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [changePage]);
+
+  useEffect(() => {
+    if (loadState !== 'ready' || !retryPullRef.current) return;
+    retryPullRef.current = false;
+    lastRemoteCheckRef.current = 0;
+    void catchUpRef.current();
+  }, [loadState]);
+
   const handleBack = async () => {
     queue.stop();
     await persistProgress('immediate');
@@ -432,12 +504,13 @@ export function Reader({
     const current = bookRef.current;
     if (!current?.remotePath) return;
     const total = pagesRef.current?.length ?? current.pageCount;
+    const saved = savedPositionRef.current ?? { page: pageRef.current, chunk: latestChunkRef.current, at: 0 };
     queueCloud(
       {
-        page: pageRef.current,
-        chunkIndex: latestChunkRef.current,
-        progress: total > 0 ? clamp((pageRef.current - 1) / total, 0, 1) : 0,
-        updatedAt: Date.now(),
+        page: saved.page,
+        chunkIndex: saved.chunk,
+        progress: total > 0 ? clamp((saved.page - 1) / total, 0, 1) : 0,
+        updatedAt: saved.at,
       },
       {
         bookmarks: list.map(toSyncedBookmark),

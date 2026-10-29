@@ -108,6 +108,7 @@ describe('applyRemoteState', () => {
     size: 10,
     importedAt: 1,
     lastOpenedAt: 500,
+    positionUpdatedAt: 500,
     pageCount: 100,
     currentPage: 3,
     lastChunkIndex: 0,
@@ -130,8 +131,13 @@ describe('applyRemoteState', () => {
       book,
       remoteState({ page: 42, updatedAt: 900, bookmarks: [bookmark('novo', 40)], deletedBookmarks: ['velho'] }),
     );
-    expect(await getBook(book.id)).toMatchObject({ currentPage: 42, lastChunkIndex: 2, lastOpenedAt: 900 });
+    expect(await getBook(book.id)).toMatchObject({ currentPage: 42, lastChunkIndex: 2, positionUpdatedAt: 900 });
     expect((await listBookmarks(book.id)).map((item) => item.id)).toEqual(['novo']);
+  });
+
+  it('abrir o livro sem avançar não impede de trazer a página do outro aparelho', async () => {
+    await applyRemoteState({ ...book, lastOpenedAt: 9999 }, remoteState({ page: 42, updatedAt: 900 }));
+    expect(await getBook(book.id)).toMatchObject({ currentPage: 42 });
   });
 
   it('não volta a página quando este aparelho leu depois', async () => {

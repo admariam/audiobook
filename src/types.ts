@@ -28,6 +28,8 @@ export interface BookMeta {
   remotePath?: string;
   /** Miniatura da primeira página (data URL JPEG); string vazia quando não foi possível gerar. */
   cover?: string;
+  /** Quando a posição de leitura (página e trecho) mudou pela última vez. */
+  positionUpdatedAt?: number;
 }
 
 export interface PageText {

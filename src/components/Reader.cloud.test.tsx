@@ -81,11 +81,52 @@ describe('Reader com GitHub', () => {
     expect((await screen.findAllByText(/Texto exclusivo da página 4/)).length).toBeGreaterThan(0);
     expect(screen.queryAllByText(/Texto exclusivo da página 1/)).toHaveLength(0);
 
+    // Só abrir o livro não pode gravar posição (senão sobrescreveria o outro aparelho).
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(readOutbox()).toEqual({});
+
     await userEvent.keyboard('m');
     await vi.waitFor(() => {
       const pending = readOutbox()['livros/Livro.pdf'];
       expect(pending?.bookmarks?.map((item) => item.id)).toContain('m1');
       expect(pending?.bookmarks).toHaveLength(2);
     });
+  });
+
+  it('ao voltar para o app, pula para a página lida em outro aparelho', async () => {
+    render(
+      <Reader
+        bookId={BOOK.id}
+        preferences={{ ...defaultPreferences }}
+        voices={{ supported: true, loaded: true, voices: [], reload: vi.fn() }}
+        onPreferencesChange={vi.fn()}
+        onBack={vi.fn()}
+        notify={vi.fn()}
+      />,
+    );
+    expect((await screen.findAllByText(/Texto exclusivo da página 4/)).length).toBeGreaterThan(0);
+
+    // Enquanto isso, o PC avançou até a página 5.
+    const current = fake.files.get('livros/progresso.json');
+    fake.files.set('livros/progresso.json', {
+      sha: `${current?.sha}-pc`,
+      content: new TextEncoder().encode(
+        JSON.stringify({
+          books: {
+            'livros/Livro.pdf': {
+              page: 5,
+              chunkIndex: 0,
+              progress: 0.8,
+              updatedAt: Date.now() + 60_000,
+              bookmarks: [],
+              deletedBookmarks: [],
+            },
+          },
+        }),
+      ),
+    });
+
+    window.dispatchEvent(new Event('focus'));
+    expect((await screen.findAllByText(/Texto exclusivo da página 5/)).length).toBeGreaterThan(0);
   });
 });
