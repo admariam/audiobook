@@ -35,6 +35,7 @@ describe('Reader com GitHub', () => {
     await createBook(BOOK, new Blob(['%PDF']), {
       bookId: BOOK.id,
       extractedAt: 1,
+      textVersion: 2,
       pages: Array.from({ length: 5 }, (_, index) => ({
         page: index + 1,
         text: `Texto exclusivo da página ${index + 1}.`,

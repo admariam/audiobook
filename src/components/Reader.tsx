@@ -15,11 +15,12 @@ import {
   getBookContent,
   getBookFile,
   listBookmarks,
+  saveBookContent,
   updateBook,
 } from '../lib/db';
 import { clamp, formatPercent, truncate } from '../lib/format';
 import { createId } from '../lib/ids';
-import { splitIntoChunks, toSpeechText } from '../lib/text';
+import { TEXT_VERSION, splitIntoChunks, toSpeechText } from '../lib/text';
 import { isGithubConfigComplete, loadGithubConfig } from '../lib/github';
 import {
   flushOutbox,
@@ -95,6 +96,7 @@ export function Reader({
   const [fileBlob, setFileBlob] = useState<Blob | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadError, setLoadError] = useState('');
+  const [loadMessage, setLoadMessage] = useState('Abrindo o livro…');
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<SpeechStatus>('idle');
   const [activeChunk, setActiveChunk] = useState(0);
@@ -263,11 +265,33 @@ export function Reader({
 
     void (async () => {
       try {
-        const [storedBook, content, blob] = await Promise.all([
+        const [storedBook, storedContent, blob] = await Promise.all([
           getBook(bookId),
           getBookContent(bookId),
           getBookFile(bookId),
         ]);
+
+        // Livro importado antes da leitura inteligente: refaz a extração uma vez,
+        // separando notas, cabeçalhos e números de nota. A página atual é mantida.
+        let content = storedContent;
+        if (storedBook && storedContent && blob && (storedContent.textVersion ?? 1) < TEXT_VERSION) {
+          if (active) setLoadMessage('Preparando a leitura deste livro… (só desta vez)');
+          try {
+            const pdf = await import('../lib/pdf');
+            const parsed = await pdf.parsePdf(new File([blob], storedBook.fileName, { type: 'application/pdf' }), {
+              fileName: storedBook.fileName,
+              onProgress: (current, total) => {
+                if (active) setLoadMessage(`Preparando a leitura deste livro… ${Math.round((current / total) * 100)}%`);
+              },
+            });
+            if (parsed.pages.length === storedContent.pages.length) {
+              content = { ...storedContent, pages: parsed.pages, extractedAt: Date.now(), textVersion: TEXT_VERSION };
+              await saveBookContent(content);
+            }
+          } catch {
+            content = storedContent;
+          }
+        }
 
         // Traz do GitHub a página onde parou em outro aparelho, sem travar se estiver offline.
         let loadedBook = storedBook;
@@ -728,6 +752,7 @@ export function Reader({
 
   const totalPages = pages?.length ?? book?.pageCount ?? 0;
   const pageText = pages?.[page - 1]?.text ?? '';
+  const pageNotes = pages?.[page - 1]?.notes ?? '';
   const activeTextChunk = chunks[activeChunk];
   const passage = speechChunks[activeChunk] ?? '';
   const currentChapter = useMemo(() => {
@@ -751,7 +776,7 @@ export function Reader({
     return (
       <div className="reader-state">
         <span className="spinner" aria-hidden="true" />
-        <p role="status">Abrindo o livro…</p>
+        <p role="status">{loadMessage}</p>
       </div>
     );
   }
@@ -993,6 +1018,13 @@ export function Reader({
                 </button>
               </div>
             )}
+
+            {pageNotes ? (
+              <aside className="page-notes" aria-label="Notas desta página">
+                <span className="page-notes__title">Notas da página (não são lidas em voz alta)</span>
+                <p>{pageNotes}</p>
+              </aside>
+            ) : null}
 
             <div className="page-reader__footer">
               <button

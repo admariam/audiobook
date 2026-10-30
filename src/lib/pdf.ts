@@ -3,6 +3,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { Chapter, PageText } from '../types';
 import { countReadableCharacters, normalizeExtractedText } from './text';
+import { layoutPage, removeRepeatedMargins, type LayoutItem } from './layout';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -75,32 +76,33 @@ export async function generateCover(file: Blob): Promise<string | undefined> {
 interface TextItemLike {
   str?: string;
   hasEOL?: boolean;
+  height?: number;
+  transform?: number[];
 }
 
-function itemsToText(items: unknown[]): string {
-  let text = '';
-  for (const raw of items) {
-    const item = raw as TextItemLike;
-    if (typeof item.str !== 'string') continue;
-    const value = item.str;
-    if (!value) {
-      if (item.hasEOL) text += '\n';
-      continue;
-    }
-    if (text && !/\s$/.test(text) && !/^[\s,.;:!?…%)\]}”’]/.test(value)) {
-      text += ' ';
-    }
-    text += value;
-    if (item.hasEOL) text += '\n';
-  }
-  return normalizeExtractedText(text);
-}
-
-async function readPageText(doc: PDFDocumentProxy, pageNumber: number): Promise<string> {
+async function readPageText(doc: PDFDocumentProxy, pageNumber: number): Promise<PageText> {
   const page = await doc.getPage(pageNumber);
   try {
     const content = await page.getTextContent();
-    return itemsToText(content.items);
+    const items: LayoutItem[] = [];
+    for (const raw of content.items) {
+      const item = raw as TextItemLike;
+      if (typeof item.str !== 'string') continue;
+      items.push({
+        str: item.str,
+        hasEOL: item.hasEOL,
+        height: item.height ?? 0,
+        x: item.transform?.[4] ?? 0,
+        y: item.transform?.[5] ?? 0,
+      });
+    }
+    const layout = layoutPage(items);
+    const notes = normalizeExtractedText(layout.notes);
+    return {
+      page: pageNumber,
+      text: normalizeExtractedText(layout.text),
+      ...(notes ? { notes } : {}),
+    };
   } finally {
     page.cleanup();
   }
@@ -232,20 +234,24 @@ export async function parsePdf(file: File, options: ParsePdfOptions = {}): Promi
     const info = metadata?.info as Record<string, unknown> | undefined;
     const { title, author } = readMetadata(info, options.fileName ?? file.name);
 
-    const pages: PageText[] = [];
-    let readableCharacters = 0;
+    let pages: PageText[] = [];
 
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
-      let text = '';
+      let pageText: PageText = { page: pageNumber, text: '' };
       try {
-        text = await readPageText(doc, pageNumber);
+        pageText = await readPageText(doc, pageNumber);
       } catch {
-        text = '';
+        // página ilegível: segue vazia
       }
-      readableCharacters += countReadableCharacters(text);
-      pages.push({ page: pageNumber, text });
+      pages.push(pageText);
       options.onProgress?.(pageNumber, pageCount);
     }
+
+    pages = removeRepeatedMargins(pages);
+    const readableCharacters = pages.reduce(
+      (total, item) => total + countReadableCharacters(item.text) + countReadableCharacters(item.notes ?? ''),
+      0,
+    );
 
     const chapters = await extractChapters(doc, pageCount);
     const needsOcr = readableCharacters < 20;

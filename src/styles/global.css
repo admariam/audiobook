@@ -2507,3 +2507,27 @@ label.field {
 .cloud-toggle.is-connected svg {
   fill: color-mix(in srgb, var(--success) 18%, transparent);
 }
+
+/* Notas de rodapé: visíveis, mas fora da leitura em voz alta */
+.page-notes {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.page-notes__title {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.page-notes p {
+  white-space: pre-line;
+}

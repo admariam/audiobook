@@ -46,6 +46,7 @@ const BOOK: BookMeta = {
 const CONTENT: BookContent = {
   bookId: 'book-1',
   extractedAt: 1000,
+  textVersion: 2,
   pages: Array.from({ length: 5 }, (_, index) => ({
     page: index + 1,
     text: `Conteúdo exclusivo da página ${index + 1}. Esta frase existe apenas nesta página para testes. Outra frase com pontuação, para completar o texto.`,

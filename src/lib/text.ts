@@ -1,4 +1,8 @@
 import type { TextChunk } from '../types';
+import { endsWithAbbreviation, prepareSpeech } from './spoken';
+
+/** Versão da extração e preparo do texto; livros com versão menor são reprocessados. */
+export const TEXT_VERSION = 2;
 
 const LIGATURES: Record<string, string> = {
   '\uFB00': 'ff',
@@ -40,15 +44,11 @@ export function normalizeExtractedText(input: string): string {
 }
 
 /**
- * Versão limpa para enviar à síntese de voz: junta linhas quebradas,
- * resolve palavras hifenizadas no fim da linha e colapsa espaços.
+ * Texto que a voz vai falar: sem números de nota e de parágrafo, com
+ * referências bíblicas, abreviações, romanos e ordinais por extenso.
  */
 export function toSpeechText(raw: string): string {
-  return raw
-    .replace(/(\p{L})-[ \t]*\n[ \t]*(\p{Ll})/gu, '$1$2')
-    .replace(/\s+/g, ' ')
-    .replace(/\s+([,.;:!?…])/g, '$1')
-    .trim();
+  return prepareSpeech(raw);
 }
 
 const MAX_CHUNK_LENGTH = 240;
@@ -92,7 +92,15 @@ export function splitIntoChunks(raw: string, maxLength = MAX_CHUNK_LENGTH): Text
       for (let i = hardLimit; i > windowStart; i -= 1) {
         const previous = raw[i - 1];
         const next = raw[i];
-        if (/[.!?…]/.test(previous) && (next === undefined || /[\s"”’)\]]/.test(next))) {
+        if (
+          /[.!?…]/.test(previous) &&
+          (next === undefined || /[\s"”’)\]]/.test(next)) &&
+          !(previous === '.' && endsWithAbbreviation(raw.slice(Math.max(start, i - 12), i - 1))) &&
+          // "19." no começo da linha é número de parágrafo, não fim de frase.
+          !/(?:^|\n)[ \t]*\d{1,3}\.$/.test(raw.slice(Math.max(0, i - 8), i)) &&
+          // Reticências entre colchetes ou parênteses: "[...]".
+          !(/[[(]\.*$/.test(raw.slice(Math.max(0, i - 4), i - 1)) && /[\])]/.test(next ?? ''))
+        ) {
           sentenceBreak = i;
           break;
         }

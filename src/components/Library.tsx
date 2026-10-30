@@ -22,6 +22,7 @@ import {
   updateFromBook,
 } from '../lib/sync';
 import { createId } from '../lib/ids';
+import { TEXT_VERSION } from '../lib/text';
 import { formatBytes, pluralize } from '../lib/format';
 import type { ToastTone } from './Toasts';
 import { BookCard } from './BookCard';
@@ -374,6 +375,7 @@ export function Library({
             bookId: id,
             pages: parsed.pages,
             extractedAt: Date.now(),
+            textVersion: TEXT_VERSION,
           });
           created.push(id);
 

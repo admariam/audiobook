@@ -92,6 +92,11 @@ export async function createBook(
   await tx.done;
 }
 
+export async function saveBookContent(content: BookContent): Promise<void> {
+  const db = await getDb();
+  await db.put('contents', content);
+}
+
 export async function updateBook(
   id: string,
   patch: Partial<Omit<BookMeta, 'id'>>,

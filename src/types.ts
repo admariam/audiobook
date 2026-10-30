@@ -35,12 +35,16 @@ export interface BookMeta {
 export interface PageText {
   page: number;
   text: string;
+  /** Notas de rodapé e legendas: aparecem na tela, mas não são lidas em voz alta. */
+  notes?: string;
 }
 
 export interface BookContent {
   bookId: string;
   pages: PageText[];
   extractedAt: number;
+  /** Versão da extração de texto; versões antigas são refeitas ao abrir o livro. */
+  textVersion?: number;
 }
 
 export interface Bookmark {
