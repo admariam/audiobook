@@ -66,9 +66,11 @@ export default function App() {
     document.documentElement.style.colorScheme = preferences.theme;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute('content', preferences.theme === 'dark' ? '#10131a' : '#3b5bdb');
+      // A página inicial é sempre escura; o leitor segue o tema escolhido.
+      const color = route.name === 'library' ? '#0e1014' : preferences.theme === 'dark' ? '#10131a' : '#3b5bdb';
+      meta.setAttribute('content', color);
     }
-  }, [preferences.theme]);
+  }, [preferences.theme, route.name]);
 
   const updatePreferences = useCallback((patch: Partial<Preferences>) => {
     setPreferences((current) => {

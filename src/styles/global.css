@@ -2531,3 +2531,295 @@ label.field {
 .page-notes p {
   white-space: pre-line;
 }
+
+/* =========================================================
+   Página inicial (biblioteca): tema escuro profissional.
+   Fica restrito a .library: o leitor continua com o tema escolhido.
+   ========================================================= */
+
+body:has(.library) {
+  background:
+    radial-gradient(1100px 420px at 50% -220px, rgba(200, 164, 90, 0.07), transparent 70%),
+    #0e1014;
+}
+
+/* Também no app-shell, para os avisos (toasts) da página inicial seguirem o tema. */
+.app-shell:has(> .library),
+.library {
+  --bg: #0e1014;
+  --bg-accent: transparent;
+  --surface: #15181e;
+  --surface-2: #1a1e25;
+  --surface-3: #21262e;
+  --text: #ece8df;
+  --text-muted: #a9a59b;
+  --text-soft: #7f7b72;
+  --border: #252930;
+  --border-strong: #343943;
+  --accent: #c8a45a;
+  --accent-hover: #d6b56d;
+  --accent-strong: #b28f47;
+  --accent-soft: #221d14;
+  --accent-border: #574729;
+  --on-accent: #16120a;
+  --highlight-bg: #2a2416;
+  --highlight-border: #8a7240;
+  --danger: #ee8b7f;
+  --danger-hover: #f4a69c;
+  --danger-soft: #2a1715;
+  --success: #6fcf8a;
+  --success-soft: #13261a;
+  --warning: #e7b766;
+  --warning-bg: #261f12;
+  --warning-border: #54431f;
+  --info-bg: #1a1e25;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 18px 36px -20px rgba(0, 0, 0, 0.85);
+  --shadow-lg: 0 30px 70px -24px rgba(0, 0, 0, 0.9);
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  color: var(--text);
+  color-scheme: dark;
+}
+
+/* Cabeçalho */
+.library .library__header {
+  background: color-mix(in srgb, #0e1014 88%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.library .brand__mark {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #1d1a13, #14120d);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+.library .brand__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.library .cloud-toggle.is-connected,
+.library .cloud-toggle.is-connected:hover {
+  color: var(--success);
+}
+
+/* Botões */
+.library .button--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+}
+
+.library .button--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.library .button--secondary,
+.library .button--ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.library .button--secondary:hover:not(:disabled),
+.library .button--ghost:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Área de importação */
+.library .dropzone {
+  border: 1px dashed var(--border-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.library .dropzone:hover,
+.library .dropzone.is-dragging {
+  border-color: var(--accent-border);
+  background: #17191f;
+  transform: none;
+}
+
+.library .dropzone__icon {
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.library .dropzone__text h2 {
+  font-family: var(--font-display);
+  font-size: 1.22rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.library .import-status {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+/* Barra de progresso em dourado */
+.library .progress {
+  background: var(--surface-3);
+}
+
+.library .progress__fill {
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent-hover));
+}
+
+.library .progress__fill--busy {
+  background-image: linear-gradient(90deg, var(--accent-strong) 0%, var(--accent-hover) 50%, var(--accent-strong) 100%);
+}
+
+/* Título da coleção, busca e ordenação */
+.library .collection-toolbar__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.library .collection-toolbar__count {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.library .search-field input,
+.library .select {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.library .search-field input:focus,
+.library .select:focus {
+  border-color: var(--accent-border);
+}
+
+.library .cloud-status svg {
+  color: var(--success);
+}
+
+/* Estados (vazio, erro, carregando) */
+.library .state-card {
+  border-color: var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.library .state-card h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.library .empty-illustration {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Cartões dos livros */
+.library .book-card {
+  border-color: var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.library .book-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: none;
+}
+
+.library .book-card__cover--image,
+.library .book-card:nth-child(3n + 2) .book-card__cover--image,
+.library .book-card:nth-child(3n + 3) .book-card__cover--image {
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(240px 140px at 50% 0%, rgba(200, 164, 90, 0.08), transparent 70%),
+    #101216;
+}
+
+.library .book-card__thumb {
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 14px 28px -12px rgba(0, 0, 0, 0.9);
+}
+
+/* Capa padrão (sem miniatura): encadernação escura com título dourado */
+.library .book-card__cover,
+.library .book-card:nth-child(3n + 2) .book-card__cover,
+.library .book-card:nth-child(3n + 3) .book-card__cover {
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(160deg, #1f2229, #14161b);
+  color: var(--accent);
+}
+
+.library .book-card__spine {
+  background: linear-gradient(180deg, var(--accent-strong), #6d5628);
+  opacity: 0.55;
+}
+
+.library .book-card__cover-title {
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+.library .book-card__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.library .chip {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.library .chip--cloud {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.library .chip--warning {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+/* Livros no GitHub ainda não baixados */
+.library .remote-books__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.library .remote-books__title svg {
+  color: var(--accent);
+}
+
+.library .remote-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.library .remote-item:hover {
+  border-color: var(--border-strong);
+}
