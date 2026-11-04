@@ -3,10 +3,10 @@
   "version": 1,
   "books": {
     "livros/O Castelo Interior.pdf": {
-      "page": 22,
-      "chunkIndex": 11,
-      "progress": 0.14564102564102566,
-      "updatedAt": 1793757549928,
+      "page": 21,
+      "chunkIndex": 8,
+      "progress": 0.13743589743589746,
+      "updatedAt": 1793757677823,
       "bookmarks": [],
       "deletedBookmarks": []
     },
